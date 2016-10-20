@@ -1,8 +1,0 @@
- {
-    "esnext": true,
-    "laxcomma": true,
-    "eqeqeq": true,
-    "undef": true,
-    "unused": true,
-    "node": true
- }

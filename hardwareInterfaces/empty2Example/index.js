@@ -70,8 +70,6 @@ if (exports.enabled) {
      **/
     exports.send = function (objName, ioName, value, mode, type) {
 
-      //  console.log(objName+" : "+ ioName +" : "+ value +" : "+ mode +" : "+ type);
-
     };
 
     /**
@@ -83,22 +81,16 @@ if (exports.enabled) {
 
 
 
-            server.addIO("obj45", "one", "default", "emptyExample");
-            server.addIO("obj45", "two", "default", "emptyExample");
-            server.addIO("obj45", "three", "default", "emptyExample");
-            server.addIO("obj45", "four", "default", "emptyExample");
-
-        server.addIO("obj46", "one1", "default", "emptyExample");
-        server.addIO("obj46", "two2", "default", "emptyExample");
-
-        server.clearIO("obj45");
-        server.clearIO("obj46");
+            server.addIO("obj47", "hans", "default", "empty2Example");
+            server.addIO("obj47", "peter", "default", "empty2Example");
 
 
+        server.clearIO("obj47");
+        
 console.log("printthatshit");
         setInterval(function(){
          
-            server.writeIOToServer("obj45", "one", Math.random(), "f");
+            server.writeIOToServer("obj47", "hans", Math.random(), "f");
 
         }, 100);
 

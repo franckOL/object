@@ -57,23 +57,55 @@ if (xhr.status == 200) {
 } else {
     console.log("Error XMLHttpRequest HTTP status: " + xhr.status);
 }
+var objectVersion = "1.0";
+var objectExp = {};
+objectExp.modelViewMatrix = [];
+objectExp.projectionMatrix = [];
+objectExp.visibility = "visible";
+var objectExpSendMatrix = false;
+var objectExpSendFullScreen = false;
+var objectExpHeight ="100%";
+var objectExpWidth = "100%";
 
 // function for resizing the windows.
-var objectExp = {};
+window.addEventListener("message", function (MSG) {
+    var msg = JSON.parse(MSG.data);
 
-window.addEventListener("message", function (msg) {
-    parent.postMessage(JSON.stringify(
-        {
-            "pos": JSON.parse(msg.data).pos,
-            "obj": JSON.parse(msg.data).obj,
-            "height": document.body.scrollHeight,
-            "width": document.body.scrollWidth
+    if (typeof msg.pos !== "undefined") {
+
+        if(objectExpSendFullScreen === false){
+            objectExpHeight = document.body.scrollHeight;
+            objectExpWidth = document.body.scrollWidth;
         }
-        )
-        // this needs to contain the final interface source
-        , "*");
-    objectExp.pos = JSON.parse(msg.data).pos;
-    objectExp.obj = JSON.parse(msg.data).obj;
+
+        parent.postMessage(JSON.stringify(
+            {
+                "pos": msg.pos,
+                "obj": msg.obj,
+                "height": objectExpHeight,
+                "width":objectExpWidth,
+                "sendMatrix" : objectExpSendMatrix,
+                "fullScreen" : objectExpSendFullScreen
+            }
+            )
+            // this needs to contain the final interface source
+            , "*");
+
+        objectExp.pos = msg.pos;
+        objectExp.obj = msg.obj;
+    }
+
+    if (typeof msg.modelViewMatrix !== "undefined") {
+        objectExp.modelViewMatrix = msg.modelViewMatrix;
+    }
+
+    if (typeof msg.projectionMatrix !== "undefined") {
+        objectExp.projectionMatrix = msg.projectionMatrix;
+    }
+
+    if (typeof msg.visibility !== "undefined") {
+        objectExp.visibility = msg.visibility;
+    }
 
 }, false);
 
@@ -85,12 +117,170 @@ document.getElementsByTagName('head')[0].appendChild(style);
 
 
 function HybridObject() {
+
+
+    this.sendGlobalMessage = function(ohMSG) {
+        if (typeof objectExp.pos !== "undefined") {
+            var msgg = JSON.stringify(
+                {
+                    "pos": objectExp.pos,
+                    "obj": objectExp.obj,
+                    "ohGlobalMessage" : ohMSG
+                });
+            window.parent.postMessage(msgg
+                , "*");
+         }
+    };
+
+    this.addGlobalMessageListener = function (callback) {
+
+        window.addEventListener("message", function (MSG) {
+            var msg = JSON.parse(MSG.data);
+            if (typeof msg.ohGlobalMessage !== "undefined") {
+                callback(msg.ohGlobalMessage);
+            }
+        }, false);
+
+    };
+
+    this.addMatrixListener = function (callback) {
+        window.addEventListener("message", function (MSG) {
+            var msg = JSON.parse(MSG.data);
+            if (typeof msg.modelViewMatrix !== "undefined") {
+                callback(msg.modelViewMatrix, objectExp.projectionMatrix);
+            }
+        }, false);
+
+    };
+
+    // subscriptions
+    this.subscribeToMatrix = function() {
+        objectExpSendMatrix = true;
+        if (typeof objectExp.pos !== "undefined") {
+
+            if(objectExpSendFullScreen === false){
+                objectExpHeight = document.body.scrollHeight;
+                objectExpWidth = document.body.scrollWidth;
+            }
+
+            parent.postMessage(JSON.stringify(
+                {
+                    "pos": objectExp.pos,
+                    "obj": objectExp.obj,
+                    "height": objectExpHeight,
+                    "width": objectExpWidth,
+                    "sendMatrix": objectExpSendMatrix,
+                    "fullScreen": objectExpSendFullScreen
+                }), "*");
+        }
+    };
+
+    this.setFullScreenOn = function() {
+        objectExpSendFullScreen = true;
+        console.log("fullscreen is loaded");
+        if (typeof objectExp.pos !== "undefined") {
+
+            objectExpHeight = "100%";
+            objectExpWidth = "100%";
+
+            parent.postMessage(JSON.stringify(
+                {
+                    "pos": objectExp.pos,
+                    "obj": objectExp.obj,
+                    "height": objectExpHeight,
+                    "width": objectExpWidth,
+                    "sendMatrix": objectExpSendMatrix,
+                    "fullScreen": objectExpSendFullScreen
+                }), "*");
+        }
+    };
+
+    this.setFullScreenOff = function() {
+        objectExpSendFullScreen = false;
+        if (typeof objectExp.pos !== "undefined") {
+
+             objectExpHeight = document.body.scrollHeight;
+             objectExpWidth = document.body.scrollWidth;
+
+            parent.postMessage(JSON.stringify(
+                {
+                    "pos": objectExp.pos,
+                    "obj": objectExp.obj,
+                    "height": objectExpHeight,
+                    "width": objectExpWidth,
+                    "sendMatrix": objectExpSendMatrix,
+                    "fullScreen": objectExpSendFullScreen
+                }), "*");
+        }
+    };
+
+    this.getVisibility = function() {
+        return objectExp.visibility;
+    };
+
+    this.addVisibilityListener = function (callback) {
+        window.addEventListener("message", function (MSG) {
+            var msg = JSON.parse(MSG.data);
+            if (typeof msg.visibility !== "undefined") {
+                callback(msg.visibility);
+            }
+        }, false);
+    };
+    
+    this.getPossitionX = function() {
+        if (typeof objectExp.modelViewMatrix[12] !== "undefined") {
+            return objectExp.modelViewMatrix[12];
+        } else return undefined;
+    };
+
+    this.getPossitionY = function() {
+        if (typeof objectExp.modelViewMatrix[13] !== "undefined") {
+            return objectExp.modelViewMatrix[13];
+        } else return undefined;
+    };
+
+    this.getPossitionZ = function() {
+        if (typeof objectExp.modelViewMatrix[14] !== "undefined") {
+            return objectExp.modelViewMatrix[14];
+        } else return undefined;
+    };
+
+    this.getProjectionMatrix = function() {
+        if (typeof objectExp.projectionMatrix !== "undefined") {
+            return objectExp.projectionMatrix;
+        } else return undefined;
+    };
+
+    this.getModelViewMatrix = function() {
+        if (typeof objectExp.modelViewMatrix !== "undefined") {
+            return objectExp.modelViewMatrix;
+        } else return undefined;
+    };
+    
     if (typeof io !== "undefined") {
+        var thisOHObjectIdentifier = this;
+
         this.object = io.connect();
+        this.oldValueList = {};
+
+            this.sendServerSubscribe = setInterval(function() {
+                if(objectExp.obj) {
+                    thisOHObjectIdentifier.object.emit('/subscribe/realityEditor', JSON.stringify({obj: objectExp.obj}));
+                    clearInterval(thisOHObjectIdentifier.sendServerSubscribe);
+                }
+            }, 10);
 
         this.write = function (IO, value, mode) {
+            if(!IO in thisOHObjectIdentifier.oldValueList){
+                thisOHObjectIdentifier.oldValueList[IO]= null;
+            }
+
             if (!mode) mode = 'f';
-            this.object.emit('object', JSON.stringify({pos: IO, obj: objectExp.obj, value: value, mode: mode}));
+
+            if(thisOHObjectIdentifier.oldValueList[IO] !== value) {
+                this.object.emit('object', JSON.stringify({pos: IO, obj: objectExp.obj, value: value, mode: mode}));
+            }
+            thisOHObjectIdentifier.oldValueList[IO] = value;
         };
 
         this.readRequest = function (IO) {
@@ -104,6 +294,20 @@ function HybridObject() {
                 return undefined;
             }
         };
+
+        this.addReadListener = function (IO, callback) {
+            thisOHObjectIdentifier.object.on("object", function (msg) {
+                var data = JSON.parse(msg);
+
+                if (typeof data.pos !== "undefined") {
+                    if (data.pos === IO) {
+                        if (typeof data.value !== "undefined")
+                            callback(data.value);
+                    }
+                }
+            });
+        };
+        
         console.log("socket.io is loaded");
     }
     else {
@@ -114,7 +318,7 @@ function HybridObject() {
         this.write = function (IO, value, mode) {
         };
         this.read = function (IO, data) {
-             return undefined;
+            return undefined;
         };
         this.readRequest = function (IO) {
         };

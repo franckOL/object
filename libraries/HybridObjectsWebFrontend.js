@@ -44,61 +44,42 @@
  */
 
 
-
 var HybridObjectsUtilities = require(__dirname+'/HybridObjectsUtilities');
-var templateModule = require(__dirname+'/templateModule');
-var testModule = require(__dirname+'/templateModule');
 var fs = require('fs');
 var changeCase = require('change-case');
 var debug = false;
-var cheerio = require('cheerio');
-var baseTemplate = null;
-var realoadInterfaceTimeout = null;
 
-var loadBaseTemplate = function() {
-    var base = templateModule.loadTemplate("base");
 
-    //get the objects
-    var objectPath = __dirname + '/../objects';
-    var tempFiles = fs.readdirSync(objectPath).filter(function (file) {
-        return fs.statSync(objectPath + '/' + file).isDirectory();
-    });
-     var sidebarElems = "";
 
-        if (typeof tempFiles[0] !== "undefined") {
-            while (tempFiles[0][0] === ".") {
-                tempFiles.splice(0, 1);
-            }
+exports.printFolder = function (objectExp, dirnameO, debug, objectInterfaceFolder, objectLookup, version) {
+    var resText = "<!DOCTYPE html>" +
+        "<html>" +
+        "<head>" +
+        "<meta charset=='utf-8'>" +
+        "<link rel='stylesheet' href='../libraries/css/bootstrap.min.css'>" +
+        '   <script src="../libraries/js/dropzone.js"></script>\n' +
+        '    <style>\n' +
+        '        #total-progress {\n' +
+        '            opacity: 0;\n' +
+        '            transition: opacity 0.3s linear;\n' +
+        '        }\n' +
+        '    </style>\n' +
+            // "<link rel='stylesheet' href='http://netdna.bootstrapcdn.com/bootstrap/3.1.1/css/bootstrap-theme.min.css'>"+
+        "</head>" +
+        '<body style="height: 100%; weight: 100%; background-color: #ffffff;">' +//  background:repeating-linear-gradient(-45deg, #e4f6ff, #e4f6ff 5px, white 5px, white 10px);" >\n'+
+        "<div class='container' style='width: 750px;height:100vh;'>" +
 
-        for (var i = 0; i < tempFiles.length; i++) {
-            var notActiveClass = "";
-             if (!fs.existsSync(objectPath + "/" + tempFiles[i] + "/target/target.xml")) {
-               notActiveClass = "not-active";
-            }
+        "<div class='panel panel-primary'>" +
+        "<div class='panel-heading'>" +
+        "<h3 class='panel-title'><font size='6'>Hybrid Object - Administration</font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Version: "+version+"</h3> " +
+        "</div>" +
 
-            sidebarElems += '<li class="'+notActiveClass+'"><a href="/info/'+tempFiles[i] + '"><span class="glyphicon glyphicon-wrench" aria-hidden="true"></span>'+tempFiles[i]+'</a></li>\n';
-        }
-    }
 
-    var sidebarTemplate = templateModule.loadTemplate("sidebar", [{"sidebarList" : sidebarElems }]);
+        "</div>" +
+        "<ul class='list-group'>";
 
-    var headerTemplate = templateModule.loadTemplate("header");
-    $ = cheerio.load(base);
-    $("#header-content").append(headerTemplate);
-    baseTemplate = $('#sidebar-content').append(sidebarTemplate);
-    console.log(__dirname);
-
-    return $.html();
-}
-
-exports.printFolder = function (objectExp, dirnameO, debug, objectInterfaceFolder, objectLookup) {
-
-    baseTemplate = loadBaseTemplate();
-    clearInterval(realoadInterfaceTimeout);
-    $ = cheerio.load(baseTemplate);
 
     var tempFiles = "";
-    console.log(dirnameO);
     var objectPath = dirnameO + "/objects";
     var tempFiles = fs.readdirSync(objectPath).filter(function (file) {
         return fs.statSync(objectPath + '/' + file).isDirectory();
@@ -116,248 +97,571 @@ exports.printFolder = function (objectExp, dirnameO, debug, objectInterfaceFolde
         }
 
         console.log("----------------------- object lookup");
+
         for (var keykey in objectLookup) {
             console.log(keykey + " = " + JSON.stringify(objectLookup[keykey]));
         }
         console.log("----------------------- end" + Math.random());
     }
-
- // remove hidden directories
+    // remove hidden directories
     if (typeof tempFiles[0] !== "undefined") {
         while (tempFiles[0][0] === ".") {
             tempFiles.splice(0, 1);
         }
 
         for (var i = 0; i < tempFiles.length; i++) {
+            resText += "<li class='list-group-item'>" +
+                "<div class='row'>" +
+                "<div class='col-xs-4'>" +
+                "<font size='5'>" + tempFiles[i] + "</font>" +
+                "</div>" +
+                "<div class='col-xs-8 text-right' style='' >";
 
-            var dataObject = [];
-
-            dataObject.push({"name" : tempFiles[i] });
-            dataObject.push({"objectInterfaceFolder" : objectInterfaceFolder});
-
-
-            console.log("object name : " + tempFiles[i]);
-
-            if (objectExp.hasOwnProperty(HybridObjectsUtilities.readObject(objectLookup, tempFiles[i])) &&
-                fs.existsSync(objectPath + "/" + tempFiles[i] + "/target/target.xml")) {
-              dataObject.push({"infoBtnDisabled" : ""});
+            if (objectExp.hasOwnProperty(HybridObjectsUtilities.readObject(objectLookup, tempFiles[i])) && fs.existsSync(objectPath + "/" + tempFiles[i] + "/target/target.xml")) {
+                resText +=
+                    "<button  class='btn btn-info' onclick=\"window.location.href='/info/" + tempFiles[i] + "'\" > Info</button> ";
             } else {
-               dataObject.push({"infoBtnDisabled" : "disabled='disabled'"});
+                resText +=
+                    "<button  class='btn btn-info' disabled='disabled'>Info</button> ";
             }
 
-            if (fs.existsSync(objectPath + '/' + tempFiles[i] + "/target/target.dat") &&
-                fs.existsSync(objectPath + '/' + tempFiles[i] + "/target/target.xml") &&
-                fs.existsSync(objectPath + '/' + tempFiles[i] + "/target/target.jpg")) {
-                dataObject.push({"targetButtonClass" : "btn-success"});
 
+            resText += "<button  class='";
+            if (fs.existsSync(objectPath + '/' + tempFiles[i] + "/target/target.dat") && fs.existsSync(objectPath + '/' + tempFiles[i] + "/target/target.xml") && fs.existsSync(objectPath + '/' + tempFiles[i] + "/target/target.jpg")) {
+                resText += "btn btn-success";
             } else {
-                 dataObject.push({"targetButtonClass" : "btn-primary"});
+                resText += "btn btn-primary";
             }
 
-            if (fs.existsSync(objectPath + '/' + tempFiles[i] + "/index.htm") ||
-                fs.existsSync(objectPath + '/' + tempFiles[i] + "/index.html"))
-            {
 
-                if (fs.existsSync(objectPath + '/' + tempFiles[i] + "/target/target.dat") &&
-                    fs.existsSync(objectPath + '/' + tempFiles[i] + "/target/target.xml") &&
-                    fs.existsSync(objectPath + '/' + tempFiles[i] + "/target/target.jpg"))
-                {
-                    dataObject.push({"interfaceBtnClass" : "btn-success"});
+            resText += "' onclick=\"window.location.href='/target/" + tempFiles[i] + "'\">Add Target</button> " +
+                "<button  class='";
+
+            if (fs.existsSync(objectPath + '/' + tempFiles[i] + "/index.htm") || fs.existsSync(objectPath + '/' + tempFiles[i] + "/index.html")) {
+
+                if (fs.existsSync(objectPath + '/' + tempFiles[i] + "/target/target.dat") && fs.existsSync(objectPath + '/' + tempFiles[i] + "/target/target.xml")&& fs.existsSync(objectPath + '/' + tempFiles[i] + "/target/target.jpg")) {
+                    resText += "btn btn-success";
                 }
                 else {
-                    dataObject.push({"interfaceBtnClass" : "btn-warning"});
-                 }
+                    resText += "btn btn-warning";
+                }
             } else {
-                dataObject.push({"interfaceBtnClass" : "btn-primary"});
+                resText += "btn btn-primary";
             }
 
-            var objectTemplate = templateModule.loadTemplate("home-object", dataObject);
-           // objectTemplate = templateModule.updateTemplate(tempFiles[i],objectTemplate, dataObject, false);
+            resText += "' onclick=\"window.location.href='/content/" + tempFiles[i] + "'\">Add Interface</button> " +
 
-            $("#main-content").append(objectTemplate);
-            $("#main-content").addClass("transparent");
+                    // "</div>"+
+                    // "<div class='col-xs-3'>"+
+
+                    // " <div>" +
+                ' <button  class="btn btn-default" onclick="window.location.href=\'/object/' + tempFiles[i] + '/zipBackup/\'"' + tempFiles[i] + '\'" > ' +
+
+                'Download' +
+                '</button> ' +
+                " <form  style='display: inline; background-color: #bde9ba;' id='delete" + i + "' action='" + objectInterfaceFolder + "' method='post' style='margin: 0px; padding: 0px'>" +
+                "<input type='hidden' name='folder' value='" + tempFiles[i] + "'>" +
+                "<input type='hidden' name='action' value='delete'>" +
+                " <input type='submit'  class='btn btn-danger' value='Delete' onclick=\"return confirm('Do you really want to delete the object " + tempFiles[i] + "?')\"> " +
+                "</form>" +
+                    //" </div>"+
+                "</div>" +
+                "</div></li>";
+
 
         }
 
-    } // end if unedf
+    }
 
-    var objectTemplate = templateModule.loadTemplate("home-object-add", dataObject);
-    $("#main-content").append(objectTemplate);
+    resText +=
+        "</ul><div class='row'>" +
+        "<form id='newFolderForm' action='" + objectInterfaceFolder + "' method='post' style='display:inline'>" +
+        "<div class='col-xs-5'>" +
+        "<input type='text' class='form-control' name='folder' id='folder' placeholder='New Object Name'/>" +
+        "<input type='hidden' name='action' value='new'>" +
+        "</div>" +
+        "<div class='col-xs-4' style='display: inline'>" +
+        "<button  class='btn btn-warning'>Create New Hybrid Object</button> " +
+        "</div>" +
+        "</form>" +
+        "<div class='col-xs-2' style='display: inline'>" +
+        '        <span class="btn btn-default fileinput-button" id="targetButton">' +
+        '            <span>' +
+
+        'Upload Object' +
+
+        '</span>' +
+        '        </span>' +
+
+        ' <br><br><span class="fileupload-process">' +
+        '          <div id="total-progress" class="progress progress-striped active" role="progressbar" aria-valuemin="0"' +
+        '               aria-valuemax="100" aria-valuenow="0">' +
+        '              <div class="progress-bar progress-bar-success" style="width:100%;" data-dz-uploadprogress></div>' +
+        '          </div>' +
+        '        </span>' +
+        "</div>" +
 
 
-    return $.html();
+        '    <div class="table table-striped" class="files" id="previews" style="display: none">' +
+        '        <div id="template" class="file-row">' +
+        '        </div>' +
+        '    </div>' +
+        "</div>" +
+
+            // "<span class='badge' style='background-color: #d58512;'>upload default files</span>"+
+
+
+        '    <script>' +
+        '        var previewNode = document.querySelector("#template");' +
+        '        previewNode.id = "";' +
+        '        var previewTemplate = previewNode.parentNode.innerHTML;' +
+        '        previewNode.parentNode.removeChild(previewNode);' +
+        '        var myDropzone = new Dropzone(document.body, {' +
+        '            url: "/backup",' +
+        '            autoProcessQueue: true,' +
+        '            thumbnailWidth: 80,' +
+        'headers: { "type": "objectUpload" },'+
+        '            thumbnailHeight: 80,' +
+        '            parallelUploads: 20,' +
+        '            createImageThumbnails: false,' +
+        '            previewTemplate: previewTemplate,' +
+        '            autoQueue: true,' +
+        '            previewsContainer: "#previews",' +
+        '            clickable: ".fileinput-button"' +
+        '        });' +
+        '        myDropzone.on("addedfile", function (file) {' +
+        '           ' +
+        '           ' +
+        '        });' +
+        '        myDropzone.on("drop", function (file) {' +
+        '           ' +
+        '            myDropzone.enqueueFiles(myDropzone.getFilesWithStatus(Dropzone.ADDED));' +
+        '        });' +
+        '        ' +
+        '        myDropzone.on("totaluploadprogress", function (progress) {' +
+        '            document.querySelector("#total-progress").style.width = progress + "%";' +
+        '        });' +
+        '        myDropzone.on("sending", function (file) {' +
+        '           ' +
+        '            document.querySelector("#total-progress").style.opacity = "1";' +
+        '           ' +
+        '            ' +
+        '        });' +
+        '        ' +
+        '        myDropzone.on("queuecomplete", function (progress) {' +
+            //'        document.querySelector("#total-progress").style.opacity = "0";'+
+            // '        document.getElementById("targetButton").className = "btn btn-success fileinput-button";'+
+            //'location.reload();'+
+        '    });' +
+
+
+        '      myDropzone.on("success", function (file, responseText) {' +
+        '   console.log(responseText );  if(responseText  === "done") {     document.querySelector("#total-progress").style.opacity = "0"; ' +
+            // '        document.getElementById("targetButton").className = "btn btn-success fileinput-button";'+
+        'location.reload();' +
+        '}' +
+        '    });' +
+        '    </script>';
+
+    resText += "</body></html>";
+    return resText;
+
 }
 
-
-exports.uploadInfoText = function (parm, objectLookup, objectExp, knownObjects, io, serverSockets) {
+exports.uploadInfoText = function (parm, objectLookup, objectExp, knownObjects, socketsInfo) {
     var objectName = HybridObjectsUtilities.readObject(objectLookup, parm); //parm + thisMacAddress;
-
-    var infoCount = 0;
 
     var ArduinoINstance = 0;
 
-    if(baseTemplate == null) baseTemplate = loadBaseTemplate();
-    $ = cheerio.load(baseTemplate);
-    clearInterval(realoadInterfaceTimeout);
-
-    var dataMonitor = [];
-    try {
-        dataMonitor.push({"name" : parm });
-        dataMonitor.push({"ip" : objectExp[objectName].ip });
-        dataMonitor.push({"version" : objectExp[objectName].version });
-        dataMonitor.push({"sockets" : serverSockets.sockets.toString() });
-        dataMonitor.push({"socketsConnected" : serverSockets.connected.toString() });
-        dataMonitor.push({"socketsNotConnected" : serverSockets.notConnected.toString() });
-    } catch(e) {
-        dataMonitor.push({"name" : parm });
-        dataMonitor.push({"ip" : "Object not loaded" });
-    }
-
-    var monitorTemplate = templateModule.loadTemplate("monitor", dataMonitor);
-
-    var sockets = null;
-
-    io.sockets.on('connection', function (socket) {
-        sockets = socket;
-    });
-
-    function GetAndSendData() {
-        var d = new Date();
-        
-        if(typeof objectExp[objectName] !== 'undefined' &&
-           Object.getOwnPropertyNames(objectExp[objectName].objectValues).length !== 0) {
-
-            var uploadInfoTexttempArray = objectExp[objectName].objectLinks;
-            var uploadInfoTexttempArrayValue = objectExp[objectName].objectValues;
-            
-            // add the variables
-           var infoCount = 0;
-           var jsonVariables = [];
-            for (subKey in uploadInfoTexttempArrayValue) {
-                jsonVariables.push({
-                    "index":infoCount,
-                    "IOName" : uploadInfoTexttempArrayValue[subKey].name,
-                    "value" : uploadInfoTexttempArrayValue[subKey].value
-                });
-                infoCount++;
-            }
-            //test
-         /*   jsonVariables.push({
-                "test": infoCount,
-                 "value" : "test",
-                "IOName" : d.getMilliseconds()
-            });*/
-
-            // add the links
-            infoCount = 0;
-            var jsonObjects = [];
-            for (subKey in knownObjects) {
-                jsonObjects.push({
-                    "connected":subKey,
-                    "number" : knownObjects[subKey]
-                });
-                infoCount++;
-            }
-            if (infoCount === 0) {
-                jsonObjects.push({
-                  "no":"no Object found"
-                });
-            }
-
-            // add the links
-            infoCount = 0;
-            var jsonLinks = [];
-            for (subKey in uploadInfoTexttempArray) {
-                  jsonLinks.push({
-                    "id": subKey,
-                    "origin" : uploadInfoTexttempArray[subKey].ObjectA,
-                    "locationO" : uploadInfoTexttempArray[subKey].locationInA.slice(0, (uploadInfoTexttempArray[subKey].ObjectA.length * -1)),
-                    "destination" :  uploadInfoTexttempArray[subKey].ObjectB,
-                    "locationD" : uploadInfoTexttempArray[subKey].locationInB.slice(0, (uploadInfoTexttempArray[subKey].ObjectA.length * -1))
-                });
-                infoCount++;
-            }
-
-            if (infoCount === 0) {
-                  jsonLinks.push({
-                    "id": "no link founds"
-                });
-            }
-
-            var jsonUpdate = [{
-                "variables" : jsonVariables,
-                "links" : jsonLinks,
-                "objects" : jsonObjects
-            }];
-
-            var updatedMonitor = templateModule.updateTemplate(parm, monitorTemplate,jsonUpdate, true );
-
-            //send the JSOn to the 
-            if(sockets) {
-                sockets.emit("getSomeData",updatedMonitor);
-            }
+    for (subKey in objectExp) {
+        if (subKey === objectName) {
+            break;
         }
+        ArduinoINstance++;
     }
+    var text = '<html>\n' +
+        '<head>\n' +
+        '<head>'+
+        '    <link rel="stylesheet" href="../libraries/css/bootstrap.min.css">\n' +
+        '    <link rel="stylesheet" href="../libraries/css/bootstrap-theme.min.css">\n' +
+        '</head>\n' +
+        '<body style="height:100vh; width: 100%">\n' +
+        '<div class="container" id="container" style="width: 750px;">\n' +
+        '    <div class="panel panel-primary">\n' +
+        '<div class="panel-heading">\n' +
+        '<h3 class="panel-title"><font size="6">Hybrid Object - ' + parm + ' - Info&nbsp;&nbsp;&nbsp;&nbsp;<a href="../" style=" color: #ffffff; text-decoration: underline;">back</a></font></h3>\n' +
+        '      </div>\n' +
+        '</div>\n' +
+'<div id="changeContent"></div>'+
 
-     realoadInterfaceTimeout = setInterval(GetAndSendData, 100);
+'<script>' +
+
+        '/*var myVar = setInterval(loadInfoContent, 100);*/' +
+        'loadInfoContent();'+
+        'function loadInfoContent () {console.log("newtick");'+
+
+   'var con = document.getElementById("changeContent")'+
+    '    ,   xhr = new XMLHttpRequest();'+
+
+    'xhr.onreadystatechange = function (e) {'+
+     '   if (xhr.readyState == 4 && xhr.status == 200) {'+
+      '      con.innerHTML = xhr.responseText;' +
+        'setTimeout(loadInfoContent, 10);'+
+
+       ' }'+
+    '}; ' +
+        'xhr.open("GET", "/infoLoadData/'+parm+'", true);'+
+ '   xhr.setRequestHeader("Content-type", "text/html");'+
+  '  xhr.send();'+
+'}'+
+
+        '</script>'+
+        '</div>\n' +
+        '</body>\n' +
+        '</html>\n' +
+        '';
 
 
-    GetAndSendData();
+    return text;
 
-    $("#main-content").append(monitorTemplate);
-    return $.html();
+
+    // var tempFolderName = tempFiles[i] + macAddress.replace(/:/gi, '');
+
+    // fill objectExp with objects named by the folders in objects
+    // objectExp[tempFolderName] = new ObjectExp();
+    // objectExp[tempFolderName].folder = tempFiles[i];
 }
 
 
+exports.uploadInfoContent = function (parm, objectLookup, objectExp, knownObjects, socketsInfo) {
+    var objectName = HybridObjectsUtilities.readObject(objectLookup, parm); //parm + thisMacAddress;
+
+
+    var uploadInfoTexttempArray = objectExp[objectName].objectLinks;
+    var uploadInfoTexttempArrayValue = objectExp[objectName].objectValues;
+
+    var ArduinoINstance = 0;
+
+    // objectExp[objectName]
+
+    for (subKey in objectExp) {
+        if (subKey === objectName) {
+            break;
+        }
+        ArduinoINstance++;
+    }
+    var text =
+        '<div id="actions" class="row">\n' +
+        '    <div class="col-xs-6">\n' +
+        '       <table class="table table-striped">\n' +
+        '            <thead>\n' +
+        '          <tr>\n' +
+        '            <th class="info">Index</th>\n' +
+        '            <th class="info">I/O Name</th>\n' +
+        '            <th class="info">Value</th>\n' +
+        '        </tr>\n' +
+        '        </thead>\n' +
+        '        <tbody>\n';
+
+    infoCount = 0;
+    for (subKey in uploadInfoTexttempArrayValue) {
+        text += "<tr> <td>" + infoCount + "</td><td>" + subKey + "</td><td>" + uploadInfoTexttempArrayValue[subKey].value + "</td></tr>";
+        infoCount++;
+    }
+
+    if (infoCount === 0) {
+        text += "<tr> <td> - </td><td> - </td></tr>";
+    }
+
+    text +=
+        '        </tbody>\n' +
+        '    </table>\n' +
+        '</div>\n' +
+        '<div class="col-xs-6">\n' +
+        '    <table class="table table-striped">\n' +
+        '        <thead>\n' +
+        '        <tr>\n' +
+        '            <th class="info">General Info</th>\n' +
+        '            <th class="info"></th>\n' +
+        '        </tr>\n' +
+        '        </thead>\n' +
+        '        <tbody>\n' +
+        /*     '<tr>\n'+
+         '            <th scope="row">Arduino Instance</th>\n'+
+         '            <td>'+ArduinoINstance+'</td>\n'+
+         '        </tr>\n'+*/
+        '        <tr>\n' +
+        '            <th scope="row">ip</th>\n' +
+        '            <td>' + objectExp[objectName].ip + '</td>\n' +
+        '        </tr>\n' +
+        '        <tr>\n' +
+        '            <th scope="row">version</th>\n' +
+        '            <td>' + objectExp[objectName].version + '</td>\n' +
+        '        </tr>\n' +
+        '        <tr>\n' +
+        '            <th scope="row">sockets</th>\n' +
+        '            <td>' + socketsInfo.sockets + '</td>\n' +
+        '        </tr>\n' +
+        '        <tr>\n' +
+        '            <th scope="row">connected</th>\n' +
+        '            <td>' + socketsInfo.connected + '</td>\n' +
+        '        </tr>\n' +
+        '        <tr>\n' +
+        '            <th scope="row">notConnected</th>\n' +
+        '            <td>' + socketsInfo.notConnected + '</td>\n' +
+        '        </tr>\n' +
+        '        </tbody>\n' +
+        '    </table>\n' +
+        '    <table class="table table-striped">\n' +
+        '        <thead>\n' +
+        '        <tr>\n' +
+        '            <th class="info">Known Objects</th>\n' +
+        '            <th class="info"> </th>\n' +
+        '        </tr>\n' +
+        '        </thead>\n' +
+        '        <tbody>\n';
+    
+
+    infoCount = 0;
+    for (subKey in knownObjects) {
+        text += '<tr><td>' + subKey + '</td><td>' + knownObjects[subKey] + '</td></tr>';
+        infoCount++;
+    }
+
+    if (infoCount === 0) {
+        text += "<tr> <td>no Object found</td><td> </td></tr>";
+    }
+
+    text +=
+        '        </tbody>\n' +
+        '    </table>\n' +
+        '</div>\n' +
+        ' </div>\n' +
+
+        ' <div id="actions" class="row">\n' +
+        '<div class="col-xs-6">\n' +
+
+        '   </div>\n' +
+        ' </div>\n' +
+
+        ' <div id="actions" class="row">\n' +
+        ' <div class="col-xs-12">\n' +
+        '   <table class="table table-striped">\n' +
+        '        <thead>\n' +
+        '        <tr>\n' +
+        '            <th class="info"><small>Active Link ID</small></th>\n' +
+        '            <th class="info"><small>Origin Object</small></th>\n' +
+        '            <th class="info"><small>Origin Possition</small></th>\n' +
+        '            <th class="info"><small>Destination Object</small></td>\n' +
+        '            <th class="info"><small>Destination Possition</small></th>\n' +
+        '        </tr>\n' +
+        '        </thead>\n' +
+        '        <tbody>\n';
+
+
+    infoCount = 0;
+    for (subKey in uploadInfoTexttempArray) {
+        if(uploadInfoTexttempArray[subKey].hasOwnProperty("ObjectNameA"))
+        text += '<tr> <td><font size="2">' + subKey + '</font></td><td><font size="2">' + uploadInfoTexttempArray[subKey].ObjectNameA + '</font></td><td><font size="2">' + uploadInfoTexttempArray[subKey].locationInA + '</font></td><td><font size="2">' + uploadInfoTexttempArray[subKey].ObjectNameB + '</font></td><td><font size="2">' + uploadInfoTexttempArray[subKey].locationInB + '</font></td></tr>\n';
+        else
+            text += '<tr> <td><font size="2">' + subKey + '</font></td><td><font size="2">' + uploadInfoTexttempArray[subKey].ObjectA + '</font></td><td><font size="2">' + uploadInfoTexttempArray[subKey].locationInA + '</font></td><td><font size="2">' + uploadInfoTexttempArray[subKey].ObjectB + '</font></td><td><font size="2">' + uploadInfoTexttempArray[subKey].locationInB + '</font></td></tr>\n';
+
+
+        infoCount++;
+    }
+
+    if (infoCount === 0) {
+        text += "<tr> <td>no Link found</td><td>  </td><td>  </td><td>  </td><td>  </td></tr>";
+    }
+
+    text +=
+        '        </tbody>\n' +
+        '    </table>\n' +
+        '</div>\n' +
+        '</div>\n' +
+        '';
+
+
+    return text;
+
+
+    // var tempFolderName = tempFiles[i] + macAddress.replace(/:/gi, '');
+
+    // fill objectExp with objects named by the folders in objects
+    // objectExp[tempFolderName] = new ObjectExp();
+    // objectExp[tempFolderName].folder = tempFiles[i];
+};
+
+
+
 exports.uploadTargetText = function (parm, objectLookup, objectExp) {
-
-    if(baseTemplate == null) baseTemplate = loadBaseTemplate();
-    $ = cheerio.load(baseTemplate);
-    clearInterval(realoadInterfaceTimeout);
-
-    var dataTarget = [];
-
     if(debug) console.log("target content");
-
     var objectName = "";
-
     if (objectExp.hasOwnProperty(HybridObjectsUtilities.readObject(objectLookup, parm))) {
+
         objectName = HybridObjectsUtilities.readObject(objectLookup, parm);
     } else {
         objectName = parm + HybridObjectsUtilities.uuidTime();
     }
-    console.log(__dirname);
 
-    dataTarget.push({"name" : parm });
-    dataTarget.push({"objectName" : objectName});
+    var text = '<!DOCTYPE html>\n' +
+        '<html>\n' +
+        '<head>\n' +
+        '   <meta charset="utf-8">\n' +
+        '   <link rel="stylesheet" href="../libraries/css/bootstrap.min.css">\n' +
+        '   <link rel="stylesheet" href="../libraries/css/bootstrap-theme.min.css">\n' +
+        '   <script src="../libraries/js/dropzone.js"></script>\n' +
+        '    <style>\n' +
+        '        #total-progress {\n' +
+        '            opacity: 0;\n' +
+        '            transition: opacity 0.3s linear;\n' +
+        '        }\n' +
+        '    </style>\n' +
+        '</head>\n' +
+        '<body style="height:100vh; weight: 100%; background-color: #ffffff;  background:repeating-linear-gradient(-45deg, #e4f6ff, #e4f6ff 5px, white 5px, white 10px);" >\n' +
+        '<div class="container" id="container" style="width: 750px;">\n' +
+        '    <div class="panel panel-primary">\n' +
+        '        <div class="panel-heading">\n' +
+        '            <h3 class="panel-title"><font size="6">Hybrid Object - ' + parm + ' - Target&nbsp;&nbsp;&nbsp;&nbsp;<a href="../" style=" color: #ffffff; text-decoration: underline;">back</a></font></h3>\n' +
+        '        </div>\n' +
+        '    </div>\n' +
+        '    <div id="actions" class="row">\n' +
+        '        <div class="col-xs-7">\n' +
+            '  <b>1. Upload your target source image (jpg only, < 0.5 MB)</b><br>' +
+        '            2. Login to the Vuforia Target Manager.<br>' +
+        '            3. Create a new or open a Device Databases.<br>' +
+        '            4. Create a target for your Object and name it exactly:<br><b>&nbsp;&nbsp;&nbsp;&nbsp;' + objectName + '</b><br>' +
+        '            5. Make sure that only this one Target is Activated.<br>' +
+        '            6. Download the database and then upload it here:<br>' +
+        '            (You can just drag and drop the files anywhere in the striped area)' +
+        '        </div>' +
+        '        <div class="col-xs-5">' +
+        '            ' +
+        '            <button class="btn btn-info" id="copy-button" data-clipboard-text="' + objectName + '"' +
+        '                    title="Click to copy me.">Copy Object Name to Clipboard' +
+        '            </button>' +
+        '    <script src="../libraries/js/ZeroClipboard.js"></script>' +
+        '    <script>' +
+        '    var client = new ZeroClipboard( document.getElementById("copy-button") );' +
+        '</script>' +
+        '            <br><br><span class="fileupload-process">' +
+        '          <div id="total-progress" class="progress progress-striped active" role="progressbar" aria-valuemin="0"' +
+        '               aria-valuemax="100" aria-valuenow="0">' +
+        '              <div class="progress-bar progress-bar-success" style="width:100%;" data-dz-uploadprogress></div>' +
+        '          </div>' +
+        '        </span>' +
+        '        <span class="btn btn-primary fileinput-button" id="targetButton">' +
+        '            <span>&nbsp;Upload Target zip and jpg Files&nbsp;</span>' +
+        '        </span>' +
+        '        </div>' +
+        '    </div>' +
+        '    <div class="table table-striped" class="files" id="previews" style="visibility: hidden">' +
+        '        <div id="template" class="file-row">' +
+        '        </div>' +
+        '    </div>' +
+        '    <script>' +
+        '        var previewNode = document.querySelector("#template");' +
+        '        previewNode.id = "";' +
+        '        var previewTemplate = previewNode.parentNode.innerHTML;' +
+        '        previewNode.parentNode.removeChild(previewNode);' +
+        '        var myDropzone = new Dropzone(document.body, {' +
+        '            url: "/content/' + parm + '",' +
+        '            autoProcessQueue: true,' +
+        '            thumbnailWidth: 80,' +
+        '            thumbnailHeight: 80,' +
+        'headers: { "type": "targetUpload" },'+
+        '            parallelUploads: 20,' +
+        '            createImageThumbnails: false,' +
+        '            previewTemplate: previewTemplate,' +
+        '            autoQueue: true,' +
+        '            previewsContainer: "#previews",' +
+        '            clickable: ".fileinput-button"' +
+        '        });' +
+        '        myDropzone.on("addedfile", function (file) {' +
+        '           ' +
+        '           ' +
+        '        });' +
+        '        myDropzone.on("drop", function (file) {' +
+        '           ' +
+        '            myDropzone.enqueueFiles(myDropzone.getFilesWithStatus(Dropzone.ADDED));' +
+        '        });' +
+        '        ' +
+        '        myDropzone.on("totaluploadprogress", function (progress) {' +
+        '            document.querySelector("#total-progress").style.width = progress + "%";' +
+        '        });' +
+        '        myDropzone.on("sending", function (file) {' +
+        '           ' +
+        '            document.querySelector("#total-progress").style.opacity = "1";' +
+        '           ' +
+        '            ' +
+        '        });' +
+        '        ' +
+        '        myDropzone.on("queuecomplete", function (progress) {' +
 
-    var targetTemplate = templateModule.loadTemplate("target", dataTarget);
-    $("#main-content").append(targetTemplate);
-    $("#main-content").addClass("big");
+        '    });' +
 
-    return $.html();
+        '       myDropzone.on("success", function (file, responseText) {' +
+        '   if(responseText  === "done") {      document.querySelector("#total-progress").style.opacity = "0"; ' +
+        '        document.getElementById("targetButton").className = "btn btn-success fileinput-button";' +
+            // 'location.reload();' +
+        '}' +
+        '    });' +
+        '    </script>' +
+        '</div>' +
+        '<iframe src="https://developer.vuforia.com/targetmanager/project/checkDeviceProjectsCreated?dataRequestedForUserId=" width="100%" height="1000px" style="left: 15px; position:absolute; width: calc(100% - 30px); background-color: #ffffff; " frameborder="0"></iframe>' +
+        '</body>' +
+        '</html>' +
+
+
+        '';
+
+    return text;
+
 }
 
 
 
+
 exports.uploadTargetContent = function (parm, dirname0, objectInterfaceFolder) {
+    if(debug) console.log("interface content");
+    var text =
 
-    if(baseTemplate == null) baseTemplate = loadBaseTemplate();
-    $ = cheerio.load(baseTemplate);
-    clearInterval(realoadInterfaceTimeout);
+        '';
 
-    var dataInterface = [];
-    dataInterface.push({"name" : parm});
-    var rowItems = "";
-
-    //object variables
     var objectPath = dirname0 + "/objects/";
+
     var objectPath2 = dirname0 + "/objects/" + parm;
-    var tempFiles = fs.readdirSync(objectPath).filter(function (file) {
+
+   var tempFiles = fs.readdirSync(objectPath).filter(function (file) {
         return fs.statSync(objectPath + '/' + file).isDirectory();
     });
 
+
     var fileList;
+    // List all files in a directory in Node.js recursively in a synchronous fashion
+    /*  var walkSync = function(dir, filelist) {
+     var fs = fs || require('fs'),
+     files = fs.readdirSync(dir);
+     filelist = filelist || [];
+     files.forEach(function(file) {
+     if (fs.statSync(dir + '/' + file).isDirectory()) {
+     filelist = walkSync(dir +'/'+ file + '/', filelist);
+     folderDepth++;
+     filelist.push("<");
+     filelist.push(file);
+     }
+     else {
+     if(file[0] !== "." )
+     filelist.push(file);
+     }
+     }
+     );
+     if(folderDepth !==0){
+     filelist.push(">");}
+
+     return filelist;
+     };*/
+
     var walk = function (dir) {
         var results = [];
         var list = fs.readdirSync(dir);
@@ -371,105 +675,241 @@ exports.uploadTargetContent = function (parm, dirname0, objectInterfaceFolder) {
     };
 
     var listeliste = walk(objectPath2);
-    var  folderOld = "";
-    var text ="0";
+
+    //  var folderContent = walkSync(objectPath,fileList);
+    var folderSpace = "";
+
+
+    var folderOrigin = "/obj/";
+
+    var llist;
+
+    folderOld = "";
+
+    text +=
+        '<html>\n' +
+        '<head>\n' +
+        '<head>\n' +
+        '    <link rel="stylesheet" href="../libraries/css/bootstrap.min.css">\n' +
+        '    <link rel="stylesheet" href="../libraries/css/bootstrap-theme.min.css">\n' +
+        '   <script src="../libraries/js/dropzone.js"></script>\n' +
+        '    <style>\n' +
+        '        #total-progress {\n' +
+        '            opacity: 0;\n' +
+        '            transition: opacity 0.3s linear;\n' +
+        '        }\n' +
+        '    </style>\n' +
+        '</head>\n' +
+        '<body style="height: 100%; width: 100%">\n' +
+        '<div class="container" id="container" style="width: 750px;">\n' +
+        '    <div class="panel panel-primary">\n' +
+        '<div class="panel-heading">\n' +
+        '<h3 class="panel-title"><font size="6">Hybrid Object - ' + parm + ' - File&nbsp;&nbsp;&nbsp;&nbsp;<a href="../" style=" color: #ffffff; text-decoration: underline;">back</a></font></h3>\n' +
+        '      </div>\n' +
+        '</div>\n' +
+        '<div id="actions" class="row">\n' +
+        ' <div class="col-xs-7">\n' +
+        '   <table class="table table-hover">\n' +
+        '        <thead>\n' +
+        '        <tr>\n' +
+        '            <th class="info">Object Folder</th>\n' +
+        '            <th class="info"></th>\n' +
+        '        </tr>\n' +
+        '        </thead>\n' +
+        '        <tbody>\n';
+
 
     for (var i = 0; i < listeliste.length; i++) {
 
         var content = listeliste[i].replace(objectPath2 + '/', '').split("/");
-        var dataRowItem = [];
-        var rowClass = "",
-        fileName= content[0],
-        iconType = "glyphicon-file",
-        formAction= "",
-        linkClass = "",
-        deleteFunction= "",
-        formId= "",
-        filePath= "/";
 
         if (content[1] !== undefined) {
-            if (content[0] !== folderOld) { // if it's a folder
-               // console.log("---" + content[0]);
-                filePath = parm + '/' + content[0];
-                formId = "2delete" + i + content[0] ;
-                formAction = objectInterfaceFolder + "content/" + parm ;
-                dataRowItem.push({"iconType" : "glyphicon-folder-open"});
-                dataRowItem.push({"fileName" : fileName});
-                dataRowItem.push({"formAction" : formAction});
-                dataRowItem.push({"formId" : formId});
-                dataRowItem.push({"filePath" : filePath});
-                dataRowItem.push({"rowClass" : "folder not-active"});
-                dataRowItem.push({"linkClass" : linkClass});
+            if (content[0] !== folderOld) {
 
-                rowItems += templateModule.loadTemplate("interface-rowitem", dataRowItem);
-                dataRowItem = [];
+                // console.log("---" + content[0]);
+
+                text += '<tr><td><font size="2"><span class="glyphicon glyphicon-folder-open" aria-hidden="true"></span>&nbsp;&nbsp;' + content[0] + '</font></td><td>';
+
+                var dateiTobeRemoved = parm + '/' + content[0];
+                text += "<form id='2delete" + i + content[0] + "' action='" + objectInterfaceFolder + "content/" + parm + "' method='post' style='margin: 0px; padding: 0px'>" +
+                    "<input type='hidden' name='folder' value='" + dateiTobeRemoved + "'>" +
+                    "<input type='hidden' name='action' value='delete'>";
+
+                text += '<a href="#" onclick="parentNode.submit();"><span class="badge" style="background-color: #d43f3a;">delete</span></a></form></td></tr>';
+
             }
+            // console.log("-"+content[0]);
+            //  console.log(content[0]+" / "+content[1]);
 
-            if (content[1][0] !== "." && content[1][0] !== "_") { // if it's target and co
+            if (content[1][0] !== "." && content[1][0] !== "_") {
+                if (debug)console.log(content[1]);
                 var fileTypeF = changeCase.lowerCase(content[1].split(".")[1]);
 
+                text += '<tr ';
                 if (content[1] === "target.dat" || content[1] === "target.xml" || content[1] === "target.jpg") {
-                   // text += 'class="success"';
-                     dataRowItem.push({"rowClass" : "required target-padding"});
-
+                    text += 'class="success"';
                 }
+
+
+                text += '><td><font size="2">';
+                text += "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;";
+                text += '<span class="';
 
                 if (fileTypeF === "jpg" || fileTypeF === "png" || fileTypeF === "gif" || fileTypeF === "jpeg") {
-                  iconType = 'glyphicon-picture';
-
+                    text += 'glyphicon glyphicon-picture';
                 } else {
-                   iconType = 'glyphicon-file';
+                    text += 'glyphicon glyphicon-file';
                 }
 
-                fileName = content[1];
-                filePath =  parm + '/' + content[0] + '/' + content[1];
+
+                text += ' aria-hidden="true"></span>&nbsp;&nbsp;<a href = "/obj/' + parm + '/' + content[0] + '/' + content[1] + '">' + content[1] + '</a></font></td><td>';
+
+                var dateiTobeRemoved = parm + '/' + content[0] + '/' + content[1];
+                text += "<form id='1delete" + i + content[1] + "' action='" + objectInterfaceFolder + "content/" + parm + "' method='post' style='margin: 0px; padding: 0px'>" +
+                    "<input type='hidden' name='folder' value='" + dateiTobeRemoved + "'>" +
+                    "<input type='hidden' name='action' value='delete'>";
+                if (debug) console.log(dateiTobeRemoved);
+                text += '<a href="#"  onclick="parentNode.submit();"><span class="badge" style="background-color: #d43f3a;">delete</span></a></form></td></tr>';
             }
 
-            folderOld = content[0];
 
+            folderOld = content[0];
         } else {
             if (content[0][0] !== "." && content[0][0] !== "_") {
                 var fileTypeF2 = changeCase.lowerCase(content[0].split(".")[1]);//.toLowerCase();
-
+                text += '<tr ';
                 if (fileTypeF2 === "html" || fileTypeF2 === "htm") {
-                  dataRowItem.push({"rowClass" : "active"});
+                    text += 'class="success"';
                 } else if (content[0] === "object.json" || content[0] === "object.css" || content[0] === "object.js") {
-                  dataRowItem.push({"rowClass" : "active"});
+                    text += 'class="active"';
                 }
 
+
+                text += '><td><font size="2">';
+                text += '<span class="';
                 if (fileTypeF2 === "jpg" || fileTypeF2 === "png" || fileTypeF2 === "gif" || fileTypeF2 === "jpeg") {
-                  iconType = 'glyphicon-picture';
+                    text += 'glyphicon glyphicon-picture';
                 } else {
-                  iconType = 'glyphicon-file';
+                    text += 'glyphicon glyphicon-file';
                 }
+
 
                 text += '" aria-hidden="true"></span>&nbsp;&nbsp;<a href = "/obj/' + parm + '/' + content[0] + '">' + content[0] + '</a></font></td><td>';
 
-                filePath = parm + '/' + content[0];
-                formId = "1delete" + i + content[0] ;
-                formAction = objectInterfaceFolder + "content/" + parm ; //we can recompose that
+                var dateiTobeRemoved = parm + '/' + content[0];
+                text += "<form id='1delete" + i + content[0] + "' action='" + objectInterfaceFolder + "content/" + parm + "' method='post' style='margin: 0px; padding: 0px'>" +
+                    "<input type='hidden' name='folder' value='" + dateiTobeRemoved + "'>" +
+                    "<input type='hidden' name='action' value='delete'>";
 
-                if (content[0] === "index.html" || content[0] === "object.json" || content[0] === "object.css" || content[0] === "object.js") {
-                    linkClass = "not-active";
-                } 
 
+                if (content[0] === "object.json" || content[0] === "object.css" || content[0] === "object.js") {
+                    text += '<span class="badge">delete</span></form></td></tr>';
+
+                } else {
+                    text += '<a href="#"  onclick="parentNode.submit();"><span class="badge" style="background-color: #d43f3a;">delete</span></a></form></td></tr>';
+                }
             }
+         
         }
 
-        dataRowItem.push({"rowClass" : rowClass});
-        dataRowItem.push({"iconType" : iconType});
-        dataRowItem.push({"fileName" : fileName});
-        dataRowItem.push({"formAction" : formAction});
-        dataRowItem.push({"formId" : formId});
-        dataRowItem.push({"filePath" : filePath});
-        dataRowItem.push({"linkClass" : linkClass});
-
-        rowItems += templateModule.loadTemplate("interface-rowitem", dataRowItem);
     }
 
-    dataInterface.push({"rowItems" : rowItems});
-    var interfaceTemplate = templateModule.loadTemplate("interface", dataInterface);
-    $("#main-content").append(interfaceTemplate);
+    text +=
 
-    return $.html();
+        '' +
+        '</div>' +
+        '        </tbody>\n' +
+        '    </table>\n' +
+        '</div> <div class="col-xs-5">\n' +
+        'Drag and Drop your interface files anywhere on this window. Make sure that <b>index.html</b> is your startpoint.' +
+        ' You can drop all your files at the same time.<br><br>' +
+        '<b>object.json</b> holds all relevant information about your object.<br>' +
+
+        ' <br><br><span class="fileupload-process">' +
+        '          <div id="total-progress" class="progress progress-striped active" role="progressbar" aria-valuemin="0"' +
+        '               aria-valuemax="100" aria-valuenow="0">' +
+        '              <div class="progress-bar progress-bar-success" style="width:100%;" data-dz-uploadprogress></div>' +
+        '          </div>' +
+        '        </span>' +
+        '        <span class="btn ';
+    if (debug)console.log(objectPath + parm + "/target/target.dat");
+    if (fs.existsSync(objectPath + parm + "/index.htm") || fs.existsSync(objectPath + '/' + parm + "/index.html")) {
+        if (fs.existsSync(objectPath + parm + "/target/target.dat") && fs.existsSync(objectPath + '/' + parm + "/target/target.xml") && fs.existsSync(objectPath + '/' + parm + "/target/target.jpg")) {
+            text += "btn-success";
+        }
+        else {
+            text += "btn-warning";
+        }
+    } else {
+        text += "btn-primary";
+    }
+    ;
+
+
+    text += ' fileinput-button" id="targetButton">' +
+        '            <span>' +
+        "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;" +
+        "Add Interface Files" +
+        "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;" +
+        '               </span>' +
+        '        </span>' +
+
+        '   <div class="table table-striped" class="files" id="previews" style="visibility: hidden">' +
+        '        <div id="template" class="file-row">' +
+        '        </div>' +
+        '    </div>' +
+        '    <script>' +
+        '        var previewNode = document.querySelector("#template");' +
+        '        previewNode.id = "";' +
+        '        var previewTemplate = previewNode.parentNode.innerHTML;' +
+        '        previewNode.parentNode.removeChild(previewNode);' +
+        '        var myDropzone = new Dropzone(document.body, {' +
+        '            url: "/content/' + parm + '",' +
+        '            autoProcessQueue: true,' +
+        '            thumbnailWidth: 80,' +
+        '            thumbnailHeight: 80,' +
+        '            parallelUploads: 20,' +
+        'headers: { "type": "contentUpload" },'+
+        '            createImageThumbnails: false,' +
+        '            previewTemplate: previewTemplate,' +
+        '            autoQueue: true,' +
+        '            previewsContainer: "#previews",' +
+        '            clickable: ".fileinput-button"' +
+        '        });' +
+        '        myDropzone.on("addedfile", function (file) {' +
+        '           ' +
+        '           ' +
+        '        });' +
+        '        myDropzone.on("drop", function (file) {' +
+        '           ' +
+        '            myDropzone.enqueueFiles(myDropzone.getFilesWithStatus(Dropzone.ADDED));' +
+        '        });' +
+        '        ' +
+        '        myDropzone.on("totaluploadprogress", function (progress) {' +
+        '            document.querySelector("#total-progress").style.width = progress + "%";' +
+        '        });' +
+        '        myDropzone.on("sending", function (file) {' +
+        '           ' +
+        '            document.querySelector("#total-progress").style.opacity = "1";' +
+        '           ' +
+        '            ' +
+        '        });' +
+        '        ' +
+        '        myDropzone.on("queuecomplete", function (progress) {' +
+        '        document.querySelector("#total-progress").style.opacity = "0";' +
+        '    });' +
+
+
+        '       myDropzone.on("success", function (file, responseText) {' +
+        '      if(responseText  === "done") {   document.querySelector("#total-progress").style.opacity = "0"; ' +
+        'location.reload();}' +
+        '    });' +
+
+
+        '    </script>' +
+        '</body>\n' +
+        '</html>\n';
+
+    return text;
+
 }

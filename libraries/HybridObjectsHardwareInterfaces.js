@@ -21,11 +21,6 @@ var http = require('http');
 var HybridObjectsUtilities = require(__dirname + '/HybridObjectsUtilities');
 var _ = require('lodash');
 
-var winston = require('winston');
-var logger=winston.loggers.get("hardware");
-logger.debug("Loading hybridObjectHardwareInterface");
-
-
 //global variables, passed through from server.js
 var objectExp;
 var objectLookup;
@@ -65,17 +60,22 @@ var hardwareInterfaces = {};
  * @param {string} mode specifies the datatype of value, you can define it to be whatever you want. For example 'f' could mean value is a floating point variable.
 **/
 exports.writeIOToServer = function (objName, ioName, value, mode) {
-    var objKey2 = HybridObjectsUtilities.readObject(objectLookup, objName); //get globally unique object id
-    var valueKey = ioName + objKey2;
 
-//    logger.debug("writeIOToServer obj: "+objName + "  name: "+ioName+ "  value: "+value+ "  mode: "+mode);
+    var objKey2 = HybridObjectsUtilities.readObject(objectLookup, objName); //get globally unique object id
+  //  var valueKey = ioName + objKey2;
+
+
+
+    //console.log(objectLookup);
+
+//    console.log("writeIOToServer obj: "+objName + "  name: "+ioName+ "  value: "+value+ "  mode: "+mode);
 
     if (objectExp.hasOwnProperty(objKey2)) {
-        if (objectExp[objKey2].objectValues.hasOwnProperty(valueKey)) {
-            objectExp[objKey2].objectValues[valueKey].value = value;
-            objectExp[objKey2].objectValues[valueKey].mode = mode;
+        if (objectExp[objKey2].objectValues.hasOwnProperty(ioName)) {
+            objectExp[objKey2].objectValues[ioName].value = value;
+            objectExp[objKey2].objectValues[ioName].mode = mode;
             //callback is objectEngine in server.js. Notify data has changed.
-            callback(objKey2, ioName, objectExp, pluginModules);
+            callback(objKey2, ioName, value, mode, objectExp, pluginModules);
         }
     }
 };
@@ -92,6 +92,7 @@ exports.clearIO = function (type) {
             if (!_.isUndefined(objectID) && !_.isNull(objectID) && objectID.length > 13) {
                 for (var key in objectExp[objectID].objectValues) {
                     if (!hardwareInterfaces[type].hybridObjects[objName].ioPoints.hasOwnProperty(objectExp[objectID].objectValues[key].name)) {
+                        if (globalVariables.debug) console.log("Deleting: " + objectID + "   " + key);
                         delete objectExp[objectID].objectValues[key];
                     }
                 }
@@ -100,7 +101,8 @@ exports.clearIO = function (type) {
 
         }
     }
-    logger.debug("it's all cleared");
+    //TODO: clear links too
+    if (globalVariables.debug) console.log("it's all cleared");
 };
 
 
@@ -115,22 +117,22 @@ exports.addIO = function (objName, ioName, plugin, type) {
     HybridObjectsUtilities.createFolder(objName, dirnameO, globalVariables.debug);
 
     var objectID = HybridObjectsUtilities.getObjectIdFromTarget(objName, dirnameO);
-    logger.debug("AddIO objectID: " + objectID + "   " + type);
+    if (globalVariables.debug) console.log("AddIO objectID: " + objectID + "   " + type);
 
-    objID = ioName + objectID;
+    //objID = ioName + objectID;
 
     if (!_.isUndefined(objectID) && !_.isNull(objectID)) {
 
         if (objectID.length > 13) {
 
-            logger.debug("I will save: " + objName + " and: " + ioName);
+            if (globalVariables.debug) console.log("I will save: " + objName + " and: " + ioName);
 
             if (objectExp.hasOwnProperty(objectID)) {
                 objectExp[objectID].developer = globalVariables.developer;
                 objectExp[objectID].name = objName;
 
-                if (!objectExp[objectID].objectValues.hasOwnProperty(objID)) {
-                    var thisObject = objectExp[objectID].objectValues[objID] = new ObjectValue();
+                if (!objectExp[objectID].objectValues.hasOwnProperty(ioName)) {
+                    var thisObject = objectExp[objectID].objectValues[ioName] = new ObjectValue();
                     thisObject.x = HybridObjectsUtilities.randomIntInc(0, 200) - 100;
                     thisObject.y = HybridObjectsUtilities.randomIntInc(0, 200) - 100;
                     thisObject.frameSizeX = 47;
@@ -139,7 +141,7 @@ exports.addIO = function (objName, ioName, plugin, type) {
 
 
                 
-                var thisObj = objectExp[objectID].objectValues[objID];
+                var thisObj = objectExp[objectID].objectValues[ioName];
                 thisObj.name = ioName;
                 thisObj.plugin = plugin;
                 thisObj.type = type;
@@ -160,6 +162,10 @@ exports.addIO = function (objName, ioName, plugin, type) {
         }
     }
     objectID = undefined;
+};
+
+exports.getObjectIdFromObjectName = function (objName) {
+   return HybridObjectsUtilities.getObjectIdFromTarget(objName, dirnameO);
 };
 
 /**
